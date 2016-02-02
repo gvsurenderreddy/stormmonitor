@@ -1,0 +1,26 @@
+{
+    "name": "stormmonitor",
+    "description": "stormmonitor module provides process status,cpu and memory usage",
+    "version": "0.0.1",
+    "author": "Suresh Kumar",
+    "homepage": "http://stormstack.org",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/stormstack/stormmonitor.git"
+    },  
+    "dependencies": {       
+    },  
+    "devDependencies": {
+        "coffee-script": ">=1.7"
+    },  
+    "optionalDependencies": {}, 
+    "engines": {
+        "node": ">=0.6.x"
+    },  
+    "main": "./lib/stormmonitor",
+    "scripts": {
+        "prepublish": "mkdir -p lib; coffee -o lib -c src"
+    },  
+    "contributors": [        
+    ]
+}
