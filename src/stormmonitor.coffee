@@ -3,6 +3,7 @@ exec = require('child_process').exec
 fs = require 'fs'
 EventEmitter = require('events').EventEmitter
 
+cpu_pids = []
 
 past = []
 current = []
@@ -29,13 +30,16 @@ measureMemory = ()->
 
 measureCPU = ()->
 	cpu = {}
+	cpu.total = 0
+	cpu.idle = 0
+	cpu.used = 0
 	data = fs.readFileSync("/proc/stat")	
 	String output = data.toString()	
 	tmparr = output.split "\n"         
 	current = tmparr[0].split (/[ ]+/)
 	unless past[0]?
 		past = current
-		return
+		return cpu
 	actual[0] = current[1] - past[1]
 	actual[1] = current[2] - past[2]
 	actual[2] = current[3] - past[3]
@@ -52,21 +56,33 @@ measureCPU = ()->
 	return cpu
 
 
-measurePID = (pid)->
-	#CPU Measurement
+measurePID = (pid , cputotal)->
+	#CPU Measurement	
 	result = {}
-	result.pid = pid
+	if cpu_pids[pid]?
+		result = cpu_pids[pid]
+	console.log result
+	result.pid ?= pid	
 	data = fs.readFileSync("/proc/#{pid}/stat")	
 	String output = data.toString()	
 	tmpvars = output.split(/[ ]+/)
 	#console.log tmpvars[15] 
 	#console.log tmpvars[16]
-	result.cpuused = Number(tmpvars[15]) + Number(tmpvars[16])	
+	#utime stime
+	cpuused = Number(tmpvars[13]) + Number(tmpvars[14])		
+	console.log result.prevcpu
+	if result.prevcpu?
+		result.actualcpu = cpuused - result.prevcpu 		
+	result.prevcpu = cpuused
+	result.cpu = ( result.actualcpu / cputotal ) * 100
 
+	cpu_pids[pid] = result
+	#unless cpu_pids[pid]?
+	#	cpu_pids[pid].push result
 
-
-
+	return result
 	#Memory Measurement	
+	###
 	data = fs.readFileSync("/proc/#{pid}/status")	
 	String output = data.toString()	
 	tmparr = output.split "\n"            	
@@ -78,6 +94,7 @@ measurePID = (pid)->
 			return result
 		count++
 	return result
+	###
 
 class StormMonitor extends EventEmitter
 
@@ -88,9 +105,11 @@ class StormMonitor extends EventEmitter
 		@pidresults = []
 		@memory = measureMemory()
 		@cpu = measureCPU()
+		console.log @cpu
 		#console.log pids
 		for pid in pids
-			@pidresults.push measurePID(pid)
+			console.log @cpu
+			@pidresults.push measurePID(pid,@cpu.total)
 		#console.log @cpu
 		#console.log @memory
 		#console.log @pidresults
@@ -111,5 +130,7 @@ class StormMonitor extends EventEmitter
 	status : () =>
 		cpu : @cpu
 		memory : @memory
+
+
 		
 module.exports = StormMonitor
