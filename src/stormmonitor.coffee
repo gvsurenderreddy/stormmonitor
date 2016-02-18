@@ -4,7 +4,6 @@ fs = require 'fs'
 EventEmitter = require('events').EventEmitter
 
 cpu_pids = []
-
 past = []
 current = []
 actual = []
@@ -61,16 +60,14 @@ measurePID = (pid , cputotal)->
 	result = {}
 	if cpu_pids[pid]?
 		result = cpu_pids[pid]
-	console.log result
+	#console.log result
 	result.pid ?= pid	
 	data = fs.readFileSync("/proc/#{pid}/stat")	
 	String output = data.toString()	
 	tmpvars = output.split(/[ ]+/)
-	#console.log tmpvars[15] 
-	#console.log tmpvars[16]
 	#utime stime
 	cpuused = Number(tmpvars[13]) + Number(tmpvars[14])		
-	console.log result.prevcpu
+	#console.log result.prevcpu
 	if result.prevcpu?
 		result.actualcpu = cpuused - result.prevcpu 		
 	result.prevcpu = cpuused
@@ -80,21 +77,22 @@ measurePID = (pid , cputotal)->
 	#unless cpu_pids[pid]?
 	#	cpu_pids[pid].push result
 
-	return result
+	#return result
 	#Memory Measurement	
-	###
+	
 	data = fs.readFileSync("/proc/#{pid}/status")	
 	String output = data.toString()	
 	tmparr = output.split "\n"            	
 	count = 1
 	for i in tmparr		
-		tmpvars = i.split(/[ ]+/)	
-		if tmpvars[0] is "VmSize:"
+		tmpvars = i.split(/:/)	
+		#console.log tmpvars
+		if tmpvars[0] is "VmSize"
 			result.memory = tmpvars[1] 				
 			return result
 		count++
 	return result
-	###
+	
 
 class StormMonitor extends EventEmitter
 
@@ -105,11 +103,11 @@ class StormMonitor extends EventEmitter
 		@pidresults = []
 		@memory = measureMemory()
 		@cpu = measureCPU()
-		console.log @cpu
+		#console.log @cpu
 		#console.log pids
 		for pid in pids
-			console.log @cpu
-			@pidresults.push measurePID(pid,@cpu.total)
+			#console.log @cpu
+			@pidresults.push measurePID(pid,@cpu.total) if pid?
 		#console.log @cpu
 		#console.log @memory
 		#console.log @pidresults
@@ -127,6 +125,12 @@ class StormMonitor extends EventEmitter
 
 	addpid : (pid) =>
 		pids.push pid
+	removepid :(pid) =>
+		index = 0 
+		for p in pids
+			pids[index] = null if p is pid
+			index++
+
 	status : () =>
 		cpu : @cpu
 		memory : @memory
